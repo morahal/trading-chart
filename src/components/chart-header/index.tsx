@@ -7,6 +7,7 @@ interface ChartHeaderProps {
   currentPrice: number;
   highestPrice: number;
   lowestPrice: number;
+  volume: number;
   resetZoomHandler: () => void;
 }
 
@@ -14,8 +15,12 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
   currentPrice,
   highestPrice,
   lowestPrice,
+  volume,
   resetZoomHandler,
 }) => {
+  const formattedVolume =
+    volume >= 1e6 ? `${(volume / 1e6).toFixed(2)}M` : volume.toLocaleString();
+
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800">
       <div className="flex items-center space-x-3">
@@ -38,7 +43,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
           </div>
 
           <div className="text-xs text-gray-400 font-bold">
-            24h Vol: 356M ·{' '}
+            24h Vol: {formattedVolume} ·{' '}
             <span className="text-green-400">
               H:{' '}
               {highestPrice.toLocaleString(undefined, {

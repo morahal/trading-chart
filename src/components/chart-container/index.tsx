@@ -19,7 +19,7 @@ import annotationPlugin, {
 } from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
 import useBinanceWebsocket from '@/hooks/useBinanceWebsocket';
-import useHistoricalData from '@/hooks/useHistoricalData';
+import useHistoricalData, { CandleData } from '@/hooks/useHistoricalData';
 import ChartHeader from '../chart-header';
 
 ChartJS.register(
@@ -40,14 +40,34 @@ export default function ChartContainer() {
   const liveData = useBinanceWebsocket(selectedInterval);
   const historicalData = useHistoricalData('BTCUSDT');
 
-  const mergedData = [...historicalData, ...liveData].sort((a, b) => a.t - b.t);
+  const mergedData = [
+    ...historicalData.map((candle) => ({ t: candle.t, p: candle.p })),
+    ...liveData,
+  ].sort((a, b) => a.t - b.t);
 
   const currentPrice =
-    mergedData.length > 0 ? mergedData[mergedData.length - 1].p : 0;
+    liveData.length > 0
+      ? liveData[liveData.length - 1].p
+      : historicalData.length > 0
+      ? historicalData[historicalData.length - 1].p
+      : 0;
+
   const highestPrice =
-    mergedData.length > 0 ? Math.max(...mergedData.map((d) => d.p)) : 0;
+    historicalData.length > 0
+      ? Math.max(...historicalData.map((d: CandleData) => d.high))
+      : 0;
   const lowestPrice =
-    mergedData.length > 0 ? Math.min(...mergedData.map((d) => d.p)) : 0;
+    historicalData.length > 0
+      ? Math.min(...historicalData.map((d: CandleData) => d.low))
+      : 0;
+
+  const totalVolume =
+    historicalData.length > 0
+      ? historicalData.reduce(
+          (sum: number, candle: CandleData) => sum + candle.volume,
+          0,
+        )
+      : 0;
 
   const chartRef = useRef<Chart<'line', number[], Date> | null>(null);
 
@@ -237,9 +257,10 @@ export default function ChartContainer() {
         currentPrice={currentPrice}
         highestPrice={highestPrice}
         lowestPrice={lowestPrice}
+        volume={totalVolume}
         resetZoomHandler={resetZoomHandler}
       />
-      <div className="relative w-full h-[500px]">
+      <div className="relative w-full h-[600px]">
         <canvas id="cryptoChart" className="w-full h-full" />
       </div>
     </div>
